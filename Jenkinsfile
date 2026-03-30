@@ -41,13 +41,14 @@ pipeline {
 
         stage('SAST - SonarQube') {
             steps {
-                withSonarQubeEnv('SonarQube') {
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         sonar-scanner \
                           -Dsonar.projectKey=WaelTo5Clean \
                           -Dsonar.projectName=WaelTo5Clean \
                           -Dsonar.sources=backend/src,frontend/src \
-                          -Dsonar.host.url=${SONAR_HOST}
+                          -Dsonar.host.url=${SONAR_HOST} \
+                          -Dsonar.login=${SONAR_TOKEN}
                     '''
                 }
             }

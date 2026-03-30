@@ -1,0 +1,85 @@
+# Full stack: Postgres + API (internal) + frontend nginx (SPA + /api proxy on :8080)
+#
+# From repo root:
+#   copy docker/.env.example -> docker/.env  (set secrets)
+#   docker compose -f docker/docker-compose.yml --env-file docker/.env up --build
+#
+# Open http://localhost:8080 — API is at http://localhost:8080/api/ (same origin).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../database/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - internal
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      ALLOW_REGISTER: ${ALLOW_REGISTER:-true}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - '4000'
+    networks:
+      - internal
+
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+      args:
+        VITE_MAPBOX_ACCESS_TOKEN: ${VITE_MAPBOX_ACCESS_TOKEN:-}
+        VITE_MAPBOX_STYLE_URL: ${VITE_MAPBOX_STYLE_URL:-}
+        VITE_API_URL: ${VITE_API_URL:-}
+    restart: unless-stopped
+    ports:
+      - '8080:8080'
+    depends_on:
+      - api
+    networks:
+      - internal
+
+  # Web UI for Postgres (local only — not a replacement for psql/GUI clients in production)
+  adminer:
+    image: adminer:4
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:5050:8080'
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
+networks:
+  internal:
+
+volumes:
+  postgres_data:

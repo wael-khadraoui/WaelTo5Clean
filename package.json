@@ -1,0 +1,23 @@
+{
+  "name": "delivery-app",
+  "version": "2.0.0",
+  "description": "Delivery web app — PostgreSQL backend + React frontend",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd middleware && npm install && cd ../frontend && npm install && cd ../backend && npm install",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "docker:up": "docker compose -f docker/docker-compose.yml --env-file docker/.env up --build",
+    "test:backend": "cd backend && npm test",
+    "seed:admin": "cd backend && npm run seed:admin"
+  },
+  "keywords": [
+    "delivery",
+    "react",
+    "postgresql",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT"
+}

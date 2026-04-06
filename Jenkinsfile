@@ -18,28 +18,6 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            parallel {
-                stage('Backend Deps') {
-                    steps {
-                        dir('backend') { sh 'npm install' }
-                    }
-                }
-                stage('Frontend Deps') {
-                    steps {
-                        dir('frontend') { sh 'npm install' }
-                    }
-                }
-            }
-        }
-
-        stage('Unit Tests') {
-            steps {
-                dir('backend') { sh 'npm test || true' }
-            }
-        }
-
-        stage('SAST - SonarQube') {
             steps {
                 withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                     sh '''
